@@ -1,0 +1,23 @@
+{
+  "rsiOversold": {
+    "period": 14,
+    "oversold": 30,
+    "overbought": 70
+  },
+  "emaCrossover": {
+    "shortPeriod": 9,
+    "longPeriod": 21
+  },
+  "macdSignal": {
+    "fastPeriod": 12,
+    "slowPeriod": 26,
+    "signalPeriod": 9
+  },
+  "bollingerBands": {
+    "period": 20,
+    "stdDev": 2
+  },
+  "deduplicator": {
+    "cooldownMs": 300000
+  }
+}

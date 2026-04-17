@@ -1,0 +1,105 @@
+LEARNED — Strategy Notes
+
+These are the key things learned about signal trading strategy design
+from building this bot.(add more to it the more you trade so you learn from your mistakes)
+
+
+RSI (Relative Strength Index)
+------------------------------
+- RSI measures momentum, not direction. A reading below 30 means the asset
+  has been sold hard and fast, not that it will definitely recover.
+- The classic 30/70 thresholds work better on higher timeframes (1h, 4h, 1d).
+  On 1-minute or 5-minute charts they fire too often and produce noise.
+- RSI divergence (price makes a new low but RSI does not) is a stronger
+  signal than a simple threshold cross, but it requires comparing two candles
+  rather than just the latest value.
+- RSI alone is a weak signal. It is most useful as a filter layered on top
+  of a trend-following signal, not as a standalone entry trigger.
+
+
+EMA Crossover
+--------------
+- A crossover is a lagging signal by definition — it only confirms after
+  the move has already started. The shorter the periods, the more lag is
+  reduced but the more false crosses appear.
+- The 9/21 EMA pair works well for short-term swing setups. The 50/200 pair
+  (the "golden cross" and "death cross") is better for macro trend detection.
+- EMA crossovers produce the most reliable signals when the market is
+  trending. In a sideways or choppy market they generate frequent false
+  signals that whipsaw in both directions.
+- Adding a volume confirmation check (volume above its own moving average
+  at the time of the cross) dramatically reduces false signals.
+
+
+MACD
+-----
+- MACD is a trend-following momentum indicator. It is derived from two EMAs
+  so it inherits their lag.
+- The histogram crossing zero is the earliest MACD signal. The MACD line
+  crossing the signal line is the classic signal but is slightly later.
+- MACD works best on trending assets. Like EMA crossovers, it produces
+  many false signals in ranging markets.
+- Normalizing the histogram by the asset's price (dividing by close) makes
+  it comparable across different assets — a raw histogram value of 50 means
+  something very different for BTC vs SOL.
+
+
+Bollinger Bands
+----------------
+- Price touching the lower band is not a buy signal on its own. In a strong
+  downtrend, price can "walk the band" and stay near the lower band for
+  extended periods.
+- Band squeeze (when upper and lower bands contract close together) signals
+  low volatility and often precedes a large move in either direction. The
+  direction of the breakout is not predictable from the squeeze alone.
+- A close outside the band followed by a close back inside is a stronger
+  mean-reversion signal than a touch alone.
+
+
+Combining signals (confluence)
+--------------------------------
+- No single indicator is reliable enough to trade on alone. The strongest
+  setups occur when multiple indicators agree at the same time — for example,
+  RSI oversold AND price at the lower Bollinger Band AND MACD histogram
+  turning positive.
+- Requiring confluence reduces signal frequency but dramatically improves
+  signal quality. Fewer trades with higher win rate is generally preferable
+  to many trades with low win rate.
+- Conflicting signals (e.g. RSI overbought but EMA just gave a bullish cross)
+  are a reason to stay out, not a reason to pick a side.
+
+
+Timeframe selection
+--------------------
+- Higher timeframes produce fewer but more reliable signals. A BUY signal
+  on the 4-hour chart carries more weight than one on the 5-minute chart.
+- Many professional strategies use multiple timeframes: confirm the trend
+  on a higher timeframe (e.g. 1d or 4h) and time the entry on a lower
+  timeframe (e.g. 15m or 1h).
+- The bot's poll interval should match the candle timeframe. Polling every
+  60 seconds while watching 1-hour candles means most cycles produce no
+  new information — that is intentional and correct.
+
+
+Deduplication and cooldowns
+-----------------------------
+- Without a cooldown, a bot will fire the same signal on every poll cycle
+  for as long as the condition holds (e.g. RSI stays below 30 for 3 hours
+  = 180 identical BUY alerts). A 5-minute cooldown per symbol/strategy pair
+  is the minimum sensible setting.
+- Cooldown length should scale with timeframe. On a 1-hour chart, a 4-6
+  hour cooldown prevents re-alerting on the same setup across multiple candles.
+
+
+General lessons
+----------------
+- Backtesting on historical data is mandatory before trusting any strategy
+  with real money. A strategy that looks good on paper often fails in live
+  markets due to slippage, spread, and execution lag.
+- Signal strength labels (STRONG, MODERATE, WEAK) are only as meaningful
+  as the logic behind them. Tying strength to how far a value exceeds a
+  threshold (e.g. RSI at 18 is stronger than RSI at 28) is more useful than
+  assigning it arbitrarily.
+- Markets change character over time. A strategy tuned on 2021 bull market
+  data will behave differently in a 2022-style bear market. Parameters should
+  be reviewed periodically, not set and forgotten.

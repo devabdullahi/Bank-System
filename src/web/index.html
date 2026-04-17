@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signal Trading Bot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0e17;
+      color: #e1e5ee;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+      border-bottom: 1px solid #21262d;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .header h1 span { color: #58a6ff; }
+
+    .status-bar {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      font-size: 13px;
+      color: #8b949e;
+    }
+
+    .status-bar .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #3fb950;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    .status-bar .dot.scanning { background: #d29922; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .stats {
+      display: flex;
+      gap: 15px;
+      padding: 15px 30px;
+      background: #0d1117;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 12px 18px;
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #58a6ff;
+    }
+
+    .stat-card .value.buy { color: #3fb950; }
+    .stat-card .value.sell { color: #f85149; }
+
+    .stat-card .label {
+      font-size: 11px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .filters {
+      padding: 15px 30px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .filter-btn {
+      background: #161b22;
+      border: 1px solid #21262d;
+      color: #8b949e;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: #1f6feb;
+      color: white;
+      border-color: #1f6feb;
+    }
+
+    .signals-container {
+      padding: 0 30px 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 15px;
+    }
+
+    .signal-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .signal-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .signal-card.buy { border-left: 3px solid #3fb950; }
+    .signal-card.sell { border-left: 3px solid #f85149; }
+
+    .signal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .signal-symbol {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .signal-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .signal-badge.buy { background: rgba(63,185,80,0.15); color: #3fb950; }
+    .signal-badge.sell { background: rgba(248,81,73,0.15); color: #f85149; }
+
+    .signal-price {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .profit-bar {
+      background: #21262d;
+      border-radius: 4px;
+      height: 6px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+
+    .profit-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s;
+    }
+
+    .profit-bar-fill.high { background: #3fb950; }
+    .profit-bar-fill.good { background: #d29922; }
+    .profit-bar-fill.moderate { background: #8b949e; }
+
+    .profit-label {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 14px;
+    }
+
+    .profit-label strong {
+      color: #e1e5ee;
+    }
+
+    .reasons {
+      margin-bottom: 14px;
+    }
+
+    .reasons h4 {
+      font-size: 11px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .reasons li {
+      font-size: 13px;
+      color: #c9d1d9;
+      margin-bottom: 4px;
+      list-style: none;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .reasons li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #58a6ff;
+    }
+
+    .trader-action {
+      background: #0d1117;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #c9d1d9;
+    }
+
+    .trader-action strong {
+      color: #58a6ff;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .signal-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 11px;
+      color: #484f58;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 30px;
+      color: #484f58;
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+    .empty-state p { font-size: 16px; }
+
+    .countdown {
+      font-size: 12px;
+      color: #8b949e;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .disclaimer {
+      text-align: center;
+      padding: 20px;
+      font-size: 11px;
+      color: #484f58;
+      border-top: 1px solid #21262d;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📈 <span>Signal Trading Bot</span></h1>
+    <div class="status-bar">
+      <span><span class="dot" id="statusDot"></span> <span id="statusText">Connecting...</span></span>
+      <span id="lastRefresh"></span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="value" id="totalSignals">0</div>
+      <div class="label">Total Signals</div>
+    </div>
+    <div class="stat-card">
+      <div class="value buy" id="buyCount">0</div>
+      <div class="label">Buy Signals</div>
+    </div>
+    <div class="stat-card">
+      <div class="value sell" id="sellCount">0</div>
+      <div class="label">Sell / Short</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stocksScanned">0</div>
+      <div class="label">Stocks Scanned</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="buy">Buy Only</button>
+    <button class="filter-btn" data-filter="sell">Sell / Short</button>
+    <button class="filter-btn" data-filter="high">High Probability</button>
+  </div>
+
+  <div class="signals-container" id="signalsContainer">
+    <div class="empty-state">
+      <div class="icon">🔍</div>
+      <p>Scanning the market... signals will appear here.</p>
+    </div>
+  </div>
+
+  <div class="countdown" id="countdown"></div>
+  <div class="disclaimer">⚠️ Educational only — not financial advice. Past signals do not guarantee future results.</div>
+
+  <script>
+    const holdGuide = {
+      'RSI Oversold': {
+        BUY: 'Buy now and hold for 2-5 days until RSI bounces back to 50-60, then sell for profit',
+        SELL: 'Sell or short now and cover in 1-3 days when it cools off',
+      },
+      'EMA Crossover': {
+        BUY: 'Buy now and ride the uptrend for 1-3 weeks — sell when trend reverses',
+        SELL: 'Sell or short now — trend flipped bearish, hold short for 1-3 weeks',
+      },
+      'MACD Signal': {
+        BUY: 'Buy now while momentum turns — hold 1-2 weeks, take profit when move slows',
+        SELL: 'Sell or short now — momentum dying, cover in 1-2 weeks',
+      },
+    };
+
+    let currentFilter = 'all';
+    let refreshInterval = 10000; // poll every 10s
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderSignals(lastData?.signals || []);
+      });
+    });
+
+    let lastData = null;
+
+    function renderSignals(signals) {
+      let filtered = signals;
+      if (currentFilter === 'buy') filtered = signals.filter(s => s.type === 'BUY');
+      if (currentFilter === 'sell') filtered = signals.filter(s => s.type === 'SELL');
+      if (currentFilter === 'high') filtered = signals.filter(s => s.profitScore >= 80);
+
+      const container = document.getElementById('signalsContainer');
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🔍</div>
+            <p>${signals.length > 0 ? 'No signals match this filter.' : 'Scanning the market... signals will appear here.'}</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(s => {
+        const isBuy = s.type === 'BUY';
+        const cls = isBuy ? 'buy' : 'sell';
+        const profitLevel = s.profitScore >= 80 ? 'high' : s.profitScore >= 60 ? 'good' : 'moderate';
+        const profitLabel = s.profitScore >= 80 ? 'HIGH PROBABILITY' : s.profitScore >= 60 ? 'GOOD PROBABILITY' : 'MODERATE';
+        const guide = holdGuide[s.strategy]?.[s.type] || '';
+        const time = new Date(s.timestamp).toLocaleTimeString();
+        const reasons = (s.profitReasons || []).map(r => `<li>${r}</li>`).join('');
+
+        return `
+          <div class="signal-card ${cls}">
+            <div class="signal-top">
+              <span class="signal-symbol">${s.symbol}</span>
+              <span class="signal-badge ${cls}">${isBuy ? '🟢 BUY' : '🔴 SELL/SHORT'}</span>
+            </div>
+            <div class="signal-price">$${s.price?.toFixed(2) || s.price}</div>
+            <div class="profit-bar"><div class="profit-bar-fill ${profitLevel}" style="width:${s.profitScore}%"></div></div>
+            <div class="profit-label">${profitLabel} — <strong>${s.profitScore}/100</strong></div>
+            ${reasons ? `<div class="reasons"><h4>Why this looks profitable</h4><ul>${reasons}</ul></div>` : ''}
+            <div class="trader-action">
+              <strong>What an experienced trader would do</strong>
+              ${guide}
+            </div>
+            <div class="signal-meta">
+              <span>${s.strategy}</span>
+              <span>${time}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function fetchSignals() {
+      try {
+        const res = await fetch('/api/signals');
+        const data = await res.json();
+        lastData = data;
+
+        const { signals, status } = data;
+
+        document.getElementById('totalSignals').textContent = signals.length;
+        document.getElementById('buyCount').textContent = signals.filter(s => s.type === 'BUY').length;
+        document.getElementById('sellCount').textContent = signals.filter(s => s.type === 'SELL').length;
+        document.getElementById('stocksScanned').textContent = status.stocksScanned || 0;
+
+        const dot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        if (status.scanning) {
+          dot.className = 'dot scanning';
+          statusText.textContent = 'Scanning...';
+        } else {
+          dot.className = 'dot';
+          statusText.textContent = 'Live';
+        }
+
+        if (status.lastRefresh) {
+          document.getElementById('lastRefresh').textContent =
+            'Updated ' + new Date(status.lastRefresh).toLocaleTimeString();
+        }
+
+        renderSignals(signals);
+      } catch (err) {
+        document.getElementById('statusDot').className = 'dot scanning';
+        document.getElementById('statusText').textContent = 'Reconnecting...';
+      }
+    }
+
+    fetchSignals();
+    setInterval(fetchSignals, refreshInterval);
+  </script>
+</body>
+</html>
