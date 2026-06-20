@@ -22,7 +22,7 @@
     "discord.js": "^14.26.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "node-telegram-bot-api": "^0.67.0",
+    "node-telegram-bot-api": "^1.1.0",
     "technicalindicators": "^3.1.0",
     "winston": "^3.19.0",
     "yahoo-finance2": "^3.14.0"
